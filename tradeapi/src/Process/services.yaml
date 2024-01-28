@@ -1,0 +1,222 @@
+
+# Copyright (C) 2023 Highend Technologies LLC
+# This file is part of Zignaly OpenTradeApi.
+#
+# Zignaly OpenTradeApi is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# Zignaly OpenTradeApi is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Zignaly OpenTradeApi.  If not, see <http://www.gnu.org/licenses/>.
+
+services:
+  exchange.security:
+    class: Security
+  newUser.model:
+    class: newUser
+  userFE.model:
+    class: userFE
+  provider.model:
+    class: Provider
+  exchange.model:
+    class: Exchange
+  position.model:
+    class: Position
+  newPositionCCXT.model:
+    class: newPositionCCXT
+  signal.model:
+    class: Signal
+  position.status:
+    class: Status
+  order.model:
+    class: Order
+  tradingFeeTracker.model:
+    class: TradingFeeTracker
+  transactions.model:
+    class: Transactions
+  cashBackPayments.model:
+    class: CashBackPayments
+  internalTransfer.model:
+    class: InternalTransfer
+  depositHistory.model:
+    class: DepositHistory
+  dailyBalance.model:
+    class: Zignaly\Balance\DailyBalance
+  post.model:
+    class: Post
+  postBE.model:
+    class: PostBE
+  cache.storage:
+    class: RedisHandler
+    arguments:
+      - "@monolog"
+      - "PublicCache"
+  redis.queue:
+    class: RedisHandler
+    arguments:
+      - "@monolog"
+      - "ZignalyQueue"
+  redis.queueTest:
+    class: RedisHandler
+    arguments:
+      - "@monolog"
+      - "ZignalyQueueTest"
+  redis.locks:
+    class: RedisHandler
+    arguments:
+      - "@monolog"
+      - "ZignalyLocks"
+  redis.triggersWatcher:
+    class: RedisHandler
+    arguments:
+      - "@monolog"
+      - "RedisTriggersWatcher"
+  redis.AccountStreamUpdates:
+    class: RedisHandler
+    arguments:
+      - "@monolog"
+      - "AccountStreamUpdates"
+  updateSignals.storage:
+    class: RedisHandler
+    arguments:
+      - "@monolog"
+      - "ZignalyUpdateSignals"
+  marketData.storage:
+    class: RedisHandler
+    arguments:
+      - "@monolog"
+      - "ZignalyData"
+  marketData:
+    class: Zignaly\redis\ZignalyMarketDataRedisService
+    arguments:
+      - "@marketData.storage"
+  lastPrice.storage:
+    class: RedisHandler
+    arguments:
+      - "@monolog"
+      - "ZignalyLastPrices"
+  lastPrice:
+    class: Zignaly\redis\ZignalyLastPriceRedisService
+    arguments:
+      - "@lastPrice.storage"
+  allHistoryPrices.storage.write:
+    class: HistoryDB2
+  allHistoryPrices.storage.read:
+    class: HistoryDB2
+  ps2.storage.read:
+    class: PS2DB
+  recentHistoryPrices.storage:
+    class: RedisHandler
+    arguments:
+      - "@monolog"
+      - "Last3DaysPrices"
+  recentHistoryPrices:
+    class: Zignaly\redis\ZignalyLastTradesRedisService
+    arguments:
+      - "@recentHistoryPrices.storage"
+  signals.message.processor:
+    class: Zignaly\Process\Signal\MessageProcessor
+    arguments:
+      - "@provider.model"
+      - "@exchange.model"
+      - "@position.model"
+      - "@signal.model"
+  arrayCache:
+    class: Symfony\Component\Cache\Adapter\ArrayAdapter
+    arguments:
+      - 3600
+      - false
+  longTermArrayCache:
+    class: Symfony\Component\Cache\Adapter\ArrayAdapter
+    arguments:
+      - 3600
+      - false
+  exchangeMediator:
+    class: \ExchangeCalls
+    arguments:
+      - "@monolog"
+  restartWorker:
+    class: \RestartWorker
+  accounting:
+    class: \Accounting
+  formula:
+    class: \Formula
+  workerRestart:
+    class: \WorkerRestart
+  PositionCacheGenerator:
+    class: \PositionCacheGenerator
+  copyTraderStats:
+    class: \CopyTraderStats
+  signalStats:
+    class: \SignalStats
+  TradeApiClient:
+    class: TradeApiClient
+    arguments:
+      - "@monolog"
+  RedisLockController:
+    class: \RedisLockController
+  RedisTriggersWatcher:
+    class: \RedisTriggersWatcher
+  SendAnalyticsEvents:
+    class: \SendAnalyticsEvents
+  ZIGHelper:
+    class: \ZIGHelper
+  MarketConversion:
+    class: \MarketConversion
+  Notification:
+    class: \Notification
+  Analytics:
+    class: \Analytics
+  positionsService:
+    class: Zignaly\Positions\PositionsService
+  balanceService:
+    class: Zignaly\Balance\BalanceService
+    arguments:
+      - "@exchangeMediator"
+      - "@newUser.model"
+      - "@dailyBalance.model"
+      - "@positionsService"
+      - "@priceConverterService"
+  priceConverterService:
+    class: Zignaly\Prices\PriceConverterService
+    arguments:
+      - "@lastPrice"
+      - "@marketData"
+  securityService:
+    class: Zignaly\Security\SecurityService
+    arguments:
+      - "@userFE.model"
+  closedPositions.storage.db:
+    class: RedisHandler
+    arguments:
+      - "@monolog"
+      - "ClosedPositions"
+  closedPositions.storage:
+    class: Zignaly\Positions\ClosedPositionsStorage
+    arguments:
+      - "@closedPositions.storage.db"
+  closedPositionsService:
+    class: Zignaly\Positions\ClosedPositionsService
+    arguments:
+      - "@closedPositions.storage"
+      - "@newPositionCCXT.model"
+      - "@dispatcher"
+      - "@providerService"
+      - "@position.status"
+  dispatcher:
+    class: Zignaly\Messaging\Dispatcher
+    arguments:
+      - "@redis.queue"
+  providerService:
+    class: Zignaly\Provider\ProviderService
+    arguments:
+      - "@monolog"
+      - "@arrayCache"
+  metricService:
+    class: Zignaly\Metrics\NewRelicMetricService
